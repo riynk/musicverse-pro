@@ -148,7 +148,7 @@ const PROVIDERS={
   youtube:{label:'YouTube',type:'official-video-discovery',search:searchYouTube}
 };
 async function search(query,filter='all'){
-  const selected=filter==='all'?Object.keys(PROVIDERS):[filter];
+  const selected=filter==='all'?Object.keys(PROVIDERS).filter(key=>key!=='youtube'||!!youtubeApiKey):[filter];
   const providers=selected.filter(key=>PROVIDERS[key]);
   const outcomes=await Promise.all(providers.map(async key=>{
     try{return {key,items:await PROVIDERS[key].search(query),error:null}}
