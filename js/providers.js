@@ -1,0 +1,135 @@
+/* MUSICVERSE PRO — federated source adapters.
+ * The adapters normalize catalog records but preserve source and playback rights.
+ * No scraping, credential harvesting, or undocumented stream extraction.
+ */
+(()=>{
+'use strict';
+const config=window.MUSICVERSE_CONFIG||{};
+const APP_NAME='MUSICVERSE_PRO';
+const timeoutFetch=async(url,timeout=11000)=>{
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeout);
+  try{
+    const response=await fetch(url,{signal:controller.signal,headers:{Accept:'application/json'}});
+    if(!response.ok)throw new Error('HTTP '+response.status);
+    return await response.json();
+  }finally{clearTimeout(timer)}
+};
+const jsonp=(url,timeout=12000)=>new Promise((resolve,reject)=>{
+  const callback='__mvJSONP_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  const script=document.createElement('script');
+  let settled=false;
+  const finish=(error,value)=>{
+    if(settled)return;settled=true;clearTimeout(timer);delete window[callback];script.remove();
+    error?reject(error):resolve(value);
+  };
+  const timer=setTimeout(()=>finish(new Error('Apple Search timeout')),timeout);
+  window[callback]=data=>finish(null,data);
+  script.onerror=()=>finish(new Error('Apple Search unavailable'));
+  script.src=url+(url.includes('?')?'&':'?')+'callback='+callback;
+  document.head.appendChild(script);
+});
+const safeURL=value=>{
+  try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}
+};
+const artworkOf=value=>safeURL(value||'');
+const normalizeAudius=track=>{
+  const user=track.user||{};
+  const gated=!!track.is_stream_gated||!!(track.stream_conditions&&Object.keys(track.stream_conditions).length);
+  const id=String(track.id||'');
+  const slug=track.permalink||'';
+  return {
+    id:'audius:'+id,source:'audius',sourceLabel:'Audius',sourceId:id,
+    title:track.title||'Untitled',artist:user.name||track.artist_name||'Audius creator',
+    album:track.album_name||'',duration:Number(track.duration)||0,
+    artwork:artworkOf(track.artwork?.['480x480']||track.artwork?.['150x150']||track.artwork?.['1000x1000']),
+    externalUrl:safeURL(slug)||('https://audius.co/search?q='+encodeURIComponent(track.title||'')),
+    playbackUrl:gated?'':('https://api.audius.co/v1/tracks/'+encodeURIComponent(id)+'/stream?app_name='+APP_NAME),
+    playbackType:gated?'external':'stream',
+    playbackLabel:gated?'Buka di Audius':'Putar dari Audius',
+    gated
+  };
+};
+async function searchAudius(query){
+  const url='https://api.audius.co/v1/tracks/search?'+new URLSearchParams({query,limit:'12'});
+  const json=await timeoutFetch(url);
+  const rows=Array.isArray(json.data)?json.data:[];
+  return rows.map(normalizeAudius).filter(x=>x.sourceId&&x.title);
+}
+async function searchApple(query){
+  const params=new URLSearchParams({term:query,country:'ID',media:'music',entity:'song',limit:'16',explicit:'Yes'});
+  const json=await jsonp('https://itunes.apple.com/search?'+params.toString());
+  return (json.results||[]).map(track=>({
+    id:'apple:'+track.trackId,source:'apple',sourceLabel:'Apple Music',sourceId:String(track.trackId||''),
+    title:track.trackName||'Untitled',artist:track.artistName||'Unknown artist',
+    album:track.collectionName||'',duration:Math.round((Number(track.trackTimeMillis)||0)/1000),
+    artwork:artworkOf((track.artworkUrl100||'').replace('100x100','300x300')),
+    externalUrl:safeURL(track.trackViewUrl)||safeURL(track.collectionViewUrl),
+    playbackUrl:safeURL(track.previewUrl),
+    playbackType:track.previewUrl?'preview':'external',
+    playbackLabel:track.previewUrl?'Cuplikan 30 detik':'Buka di Apple Music',
+    storeLabel:'Buka di Apple Music'
+  })).filter(x=>x.sourceId&&x.title);
+}
+let radioServerPromise;
+async function radioServer(){
+  if(!radioServerPromise){
+    radioServerPromise=timeoutFetch('https://all.api.radio-browser.info/json/servers',7000)
+      .then(rows=>{
+        const names=(rows||[]).map(x=>x.name).filter(Boolean);
+        if(!names.length)throw new Error('No radio servers');
+        return 'https://'+names[Math.floor(Math.random()*names.length)];
+      }).catch(()=>'https://de1.api.radio-browser.info');
+  }
+  return radioServerPromise;
+}
+async function searchRadio(query){
+  const server=await radioServer();
+  const params=new URLSearchParams({name:query,limit:'12',hidebroken:'true',order:'clickcount',reverse:'true'});
+  const rows=await timeoutFetch(server+'/json/stations/search?'+params.toString());
+  return (rows||[]).filter(station=>station.stationuuid&&station.name).map(station=>({
+    id:'radio:'+station.stationuuid,source:'radio',sourceLabel:'Radio Browser',sourceId:station.stationuuid,
+    title:station.name,artist:[station.country,station.tags].filter(Boolean).join(' · ')||'Radio station',
+    album:station.codec||'Live radio',duration:0,artwork:artworkOf(station.favicon),
+    externalUrl:safeURL(station.homepage)||('https://www.radio-browser.info/'),
+    playbackUrl:Number(station.lastcheckok)===1?safeURL(station.url_resolved||station.url):'',
+    playbackType:Number(station.lastcheckok)===1?'stream':'external',
+    playbackLabel:Number(station.lastcheckok)===1?'Dengarkan siaran':'Buka situs radio',
+    bitrate:Number(station.bitrate)||0,codec:station.codec||''
+  })).filter(x=>x.playbackUrl||x.externalUrl);
+}
+async function searchArchive(query){
+  const params=new URLSearchParams();
+  params.set('q','('+query.replace(/[+\-!(){}\[\]^"~*?:\\/]/g,' ').trim()+') AND mediatype:audio');
+  ['identifier','title','creator','year','licenseurl'].forEach(k=>params.append('fl[]',k));
+  params.set('rows','12');params.set('page','1');params.set('output','json');
+  const json=await timeoutFetch('https://archive.org/advancedsearch.php?'+params.toString());
+  return (json.response?.docs||[]).map(item=>({
+    id:'archive:'+item.identifier,source:'archive',sourceLabel:'Internet Archive',sourceId:item.identifier,
+    title:item.title||item.identifier,artist:Array.isArray(item.creator)?item.creator.join(', '):(item.creator||'Internet Archive collection'),
+    album:item.year||'Open archive',duration:0,artwork:'https://archive.org/services/img/'+encodeURIComponent(item.identifier),
+    externalUrl:'https://archive.org/details/'+encodeURIComponent(item.identifier),
+    playbackUrl:'',playbackType:'external',playbackLabel:'Buka rekaman',
+    licenseUrl:safeURL(item.licenseurl||'')
+  })).filter(x=>x.sourceId&&x.title);
+}
+const PROVIDERS={
+  audius:{label:'Audius',type:'streaming',search:searchAudius},
+  apple:{label:'Apple Music',type:'licensed-catalog-preview',search:searchApple},
+  radio:{label:'Radio Browser',type:'live-radio',search:searchRadio},
+  archive:{label:'Internet Archive',type:'metadata-archive',search:searchArchive}
+};
+async function search(query,filter='all'){
+  const selected=filter==='all'?Object.keys(PROVIDERS):[filter];
+  const providers=selected.filter(key=>PROVIDERS[key]);
+  const outcomes=await Promise.all(providers.map(async key=>{
+    try{return {key,items:await PROVIDERS[key].search(query),error:null}}
+    catch(error){return {key,items:[],error:error?.message||'Tidak tersedia'}}
+  }));
+  return {
+    items:outcomes.flatMap(x=>x.items),
+    providers:outcomes.map(x=>({key:x.key,label:PROVIDERS[x.key].label,count:x.items.length,error:x.error}))
+  };
+}
+window.MusicverseSources={search,providers:PROVIDERS};
+})();
