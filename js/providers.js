@@ -117,6 +117,13 @@ async function searchArchive(query){
 
 let youtubeApiKey='';
 try{youtubeApiKey=config.youtubeApiKey||localStorage.getItem('musicverse-youtube-api-key')||''}catch{}
+let jamendoClientId='';
+try{jamendoClientId=config.jamendoClientId||localStorage.getItem('musicverse-jamendo-client-id')||''}catch{}
+function setJamendoClientId(value){
+  jamendoClientId=String(value||'').trim();
+  try{if(jamendoClientId)localStorage.setItem('musicverse-jamendo-client-id',jamendoClientId);else localStorage.removeItem('musicverse-jamendo-client-id')}catch{return false}
+  return true;
+}
 function setYoutubeApiKey(value){
   youtubeApiKey=String(value||'').trim();
   try{if(youtubeApiKey)localStorage.setItem('musicverse-youtube-api-key',youtubeApiKey);else localStorage.removeItem('musicverse-youtube-api-key')}catch{return false}
@@ -140,15 +147,44 @@ async function searchYouTube(query){
   }).filter(item=>item.sourceId);
 }
 
+
+async function searchJamendo(query){
+  if(!jamendoClientId)throw new Error('Client ID Jamendo belum dipasang pada setelan sumber.');
+  const params=new URLSearchParams({
+    client_id:jamendoClientId,format:'json',limit:'12',
+    search:query,type:'single albumtrack',
+    include:'licenses,musicinfo',audioformat:'mp32',imagesize:'300'
+  });
+  const json=await jsonp('https://api.jamendo.com/v3.0/tracks/?'+params.toString());
+  if(json.headers?.status&&json.headers.status!=='success')throw new Error(json.headers.error_message||'Jamendo API error');
+  return (json.results||[]).map(track=>{
+    const licenseUrl=safeURL(track.license_ccurl||'');
+    const playbackUrl=safeStreamURL(track.audio||'');
+    return {
+      id:'jamendo:'+track.id,source:'jamendo',sourceLabel:'Jamendo',sourceId:String(track.id||''),
+      title:track.name||'Untitled',artist:track.artist_name||'Jamendo artist',
+      album:[track.album_name,licenseUrl?'Creative Commons':'Jamendo terms'].filter(Boolean).join(' · '),
+      duration:Number(track.duration)||0,
+      artwork:artworkOf(track.album_image||track.image),
+      externalUrl:safeURL(track.shareurl||track.shorturl),
+      playbackUrl,playbackType:playbackUrl?'stream':'external',
+      playbackLabel:playbackUrl?'Putar dari Jamendo':'Buka di Jamendo',
+      licenseUrl,licenseType:licenseUrl?'Creative Commons':'Jamendo',
+      downloadAllowed:track.audiodownload_allowed===true
+    };
+  }).filter(track=>track.sourceId&&track.title);
+}
+
 const PROVIDERS={
   audius:{label:'Audius',type:'streaming',search:searchAudius},
   apple:{label:'Apple Music',type:'licensed-catalog-preview',search:searchApple},
   radio:{label:'Radio Browser',type:'live-radio',search:searchRadio},
   archive:{label:'Internet Archive',type:'metadata-archive',search:searchArchive},
-  youtube:{label:'YouTube',type:'official-video-discovery',search:searchYouTube}
+  youtube:{label:'YouTube',type:'official-video-discovery',search:searchYouTube},
+  jamendo:{label:'Jamendo',type:'licensed-independent-streaming',search:searchJamendo}
 };
 async function search(query,filter='all'){
-  const selected=filter==='all'?Object.keys(PROVIDERS).filter(key=>key!=='youtube'||!!youtubeApiKey):[filter];
+  const selected=filter==='all'?Object.keys(PROVIDERS).filter(key=>(key!=='youtube'||!!youtubeApiKey)&&(key!=='jamendo'||!!jamendoClientId)):[filter];
   const providers=selected.filter(key=>PROVIDERS[key]);
   const outcomes=await Promise.all(providers.map(async key=>{
     try{return {key,items:await PROVIDERS[key].search(query),error:null}}
@@ -159,5 +195,5 @@ async function search(query,filter='all'){
     providers:outcomes.map(x=>({key:x.key,label:PROVIDERS[x.key].label,count:x.items.length,error:x.error}))
   };
 }
-window.MusicverseSources={search,providers:PROVIDERS,setYoutubeApiKey,getYoutubeApiKey:()=>youtubeApiKey};
+window.MusicverseSources={search,providers:PROVIDERS,setYoutubeApiKey,getYoutubeApiKey:()=>youtubeApiKey,setJamendoClientId,getJamendoClientId:()=>jamendoClientId};
 })();
