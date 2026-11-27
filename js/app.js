@@ -4,8 +4,8 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const audio=$('#audio'), appShell=$('.app-shell');
 const STORE_KEY='musicverse-pro-state-v2', DB_NAME='musicverse-pro-db', DB_STORE='audio-files';
 const palettes=['linear-gradient(135deg,#75619d,#304a68)','linear-gradient(135deg,#a46985,#413450)','linear-gradient(135deg,#477b83,#273d57)','linear-gradient(135deg,#a87553,#523b4a)','linear-gradient(135deg,#6574a6,#373458)','linear-gradient(135deg,#966eaa,#36556a)'];
-const S={tracks:[],liked:new Set(),playlists:[],lyrics:{},translations:{},recent:[],queue:[],currentId:null,shuffle:false,repeatMode:'off',view:'home',history:['home'],historyIndex:0,activePlaylistId:null,lyricMode:'lrc',theme:'dark',panelTab:'lyrics',modalMode:null,modalData:null,db:null};
-let toastTimer=0,lastLyricIndex=-1,searchQuery='';
+const S={tracks:[],liked:new Set(),playlists:[],lyrics:{},translations:{},recent:[],queue:[],remoteTracks:new Map(),remoteResults:[],sourceFilter:'all',searchSequence:0,currentId:null,shuffle:false,repeatMode:'off',view:'home',history:['home'],historyIndex:0,activePlaylistId:null,lyricMode:'lrc',theme:'dark',panelTab:'lyrics',modalMode:null,modalData:null,db:null};
+let toastTimer=0,lastLyricIndex=-1,searchQuery='',remoteSearchTimer=0,lastRemoteQuery='',lastRemoteFilter='';
 const escapeHTML=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime=n=>Number.isFinite(n)&&n>=0?Math.floor(n/60)+':'+String(Math.floor(n%60)).padStart(2,'0'):'0:00';
 const makeId=()=>window.crypto?.randomUUID?crypto.randomUUID():'mv-'+Date.now()+'-'+Math.random().toString(36).slice(2,10);
@@ -99,7 +99,7 @@ async function importFiles(fileList){
   else if(!failed)notify('File tersebut sudah ada di perpustakaan.');
   if(failed)notify('Audio berhasil dibuka untuk sesi ini, tetapi penyimpanan permanen gagal. Periksa ruang browser.');
 }
-const getTrack=id=>S.tracks.find(t=>t.id===id);
+const getTrack=id=>S.tracks.find(t=>t.id===id)||S.remoteTracks.get(id);
 const currentTrack=()=>getTrack(S.currentId);
 function trackRow(t,index,options={}){
   const current=t.id===S.currentId,liked=S.liked.has(t.id),remove=options.removeFromPlaylist;
@@ -163,7 +163,7 @@ function playTrack(id,queueIds){
   if(Array.isArray(queueIds))S.queue=queueIds.filter((v,i,a)=>getTrack(v)&&a.indexOf(v)===i);
   if(!S.queue.length)S.queue=S.tracks.map(t=>t.id);
   if(!S.queue.includes(id))S.queue.unshift(id);
-  S.currentId=id;lastLyricIndex=-1;audio.src=track.url;audio.load();
+  S.currentId=id;lastLyricIndex=-1;const source=track.playbackUrl||track.url;if(!source){notify('Sumber ini hanya menyediakan katalog atau tautan eksternal.');return}audio.src=source;audio.load();
   audio.play().catch(()=>notify('Browser belum dapat memutar file ini. Coba format audio lain.'));
   S.recent=[id,...S.recent.filter(v=>v!==id)].slice(0,20);saveState();renderCurrent();renderQueue();renderAll();
 }
@@ -192,15 +192,18 @@ function prevTrack(){
 function renderCurrent(){
   const t=currentTrack(),playing=!!t&&!audio.paused;
   $('#playerTitle').textContent=t?t.title:'Pilih sebuah lagu';
-  $('#playerArtist').textContent=t?t.artist:'Musicverse local library';
+  const sourceLabel=t?.sourceLabel?' · '+t.sourceLabel:'';
+  $('#playerArtist').textContent=t?t.artist+sourceLabel:'Musicverse local library';
   $('#sideTrackTitle').textContent=t?t.title:'Belum ada lagu';
-  $('#sideTrackArtist').textContent=t?t.artist:'Pilih musik untuk memulai';
+  $('#sideTrackArtist').textContent=t?t.artist+sourceLabel:'Pilih musik untuk memulai';
   $('#studioTrackTitle').textContent=t?t.title:'Belum ada lagu dipilih';
-  $('#studioTrackArtist').textContent=t?t.artist:'Pilih lagu dari perpustakaan';
+  $('#studioTrackArtist').textContent=t?t.artist+sourceLabel:'Pilih lagu dari perpustakaan';
   $('#queueNowTitle').textContent=t?t.title:'Belum ada lagu';
   $('#playBtn').innerHTML='<i data-lucide="'+(playing?'pause':'play')+'"></i>';
   $('#playBtn').setAttribute('aria-label',playing?'Jeda':'Putar');
   $('#likeCurrent').classList.toggle('liked',!!t&&S.liked.has(t.id));
+  $('#likeCurrent').disabled=!!t?.source;
+  $('#likeCurrent').title=t?.source?'Favorit lintas sumber akan tersedia setelah sinkronisasi akun':'Sukai lagu';
   $('#sideArt').style.background=t?palettes[Math.max(0,S.tracks.indexOf(t))%palettes.length]:'radial-gradient(circle at 50% 45%,#77609e,#292741 61%,#171a28)';
   $('#playerCover').style.background=t?palettes[Math.max(0,S.tracks.indexOf(t))%palettes.length]:'linear-gradient(135deg,#72608f,#32475d)';
   $('#currentTime').textContent=fmtTime(audio.currentTime||0);
@@ -296,8 +299,67 @@ function renderSearch(query){
   let html=tracks.map(trackRow).join('');
   if(playlists.length)html+='<div class="search-playlist-results"><span class="section-kicker">PLAYLISTS</span><div class="playlist-grid">'+playlists.map(playlistCard).join('')+'</div></div>';
   $('#searchResults').innerHTML=html||emptyState(q?'Tidak ada yang cocok':'Perpustakaan masih kosong',q?'Coba kata kunci lain atau impor audio ke perangkatmu.':'Impor audio agar pencarian dapat menemukan musikmu.','Impor musik','import-audio');
+  scheduleFederatedSearch(query);
   icons();
 }
+
+function renderFederatedResults(){
+  const container=$('#externalSearchResults'),status=$('#externalSearchStatus'),count=$('#externalSearchCount');
+  if(!container||!status||!count)return;
+  const rows=S.remoteResults;
+  count.textContent=rows.length+' hasil';
+  if(!rows.length){container.innerHTML=emptyState('Belum ada hasil eksternal','Coba kata kunci lain. Sebagian sumber mungkin sedang tidak merespons.','','');return}
+  container.innerHTML=rows.map(track=>{
+    const artwork=safeExternalURL(track.artwork),link=safeExternalURL(track.externalUrl);
+    const canPlay=!!safeExternalURL(track.playbackUrl);
+    const badge=track.sourceLabel||'Sumber eksternal';
+    const playLabel=track.playbackType==='preview'?'Cuplikan 30 dtk':track.playbackType==='stream'?'Putar':'Buka sumber';
+    const cover=artwork?'<img src="'+escapeHTML(artwork)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<i data-lucide="disc-3"></i>';
+    const sourceLink=link?'<a class="source-open-link" href="'+escapeHTML(link)+'" target="_blank" rel="noopener noreferrer">'+escapeHTML(track.storeLabel||'Lihat sumber')+' <i data-lucide="external-link"></i></a>':'';
+    return '<article class="federated-card"><div class="federated-cover">'+cover+'</div><div class="federated-copy"><span class="source-badge source-'+escapeHTML(track.source)+'">'+escapeHTML(badge)+'</span><strong>'+escapeHTML(track.title)+'</strong><span>'+escapeHTML(track.artist)+'</span><small>'+escapeHTML(track.album||track.playbackLabel||'')+'</small><div class="federated-actions">'+(canPlay?'<button class="source-play" data-action="play-remote" data-id="'+escapeHTML(track.id)+'"><i data-lucide="play"></i>'+playLabel+'</button>':'')+sourceLink+'</div></div></article>';
+  }).join('');
+  icons();
+}
+function safeExternalURL(value){
+  try{const url=new URL(value);return ['https:','http:'].includes(url.protocol)?url.href:''}catch{return ''}
+}
+function scheduleFederatedSearch(query,force=false){
+  const q=String(query||'').trim();
+  clearTimeout(remoteSearchTimer);
+  if(q.length<2){
+    S.remoteResults=[];S.remoteTracks.clear();lastRemoteQuery='';lastRemoteFilter=S.sourceFilter;
+    $('#externalSearchStatus').textContent='Masukkan minimal dua karakter untuk mencari di katalog eksternal.';
+    $('#externalSearchCount').textContent='—';
+    $('#externalSearchResults').innerHTML='';
+    return;
+  }
+  if(!force&&q===lastRemoteQuery&&S.sourceFilter===lastRemoteFilter)return;
+  lastRemoteQuery=q;lastRemoteFilter=S.sourceFilter;
+  const sequence=++S.searchSequence;
+  $('#externalSearchStatus').textContent='Menghubungkan ke '+(S.sourceFilter==='all'?'berbagai sumber musik':S.sourceFilter)+'…';
+  $('#externalSearchCount').textContent='Mencari';
+  $('#externalSearchResults').innerHTML='<div class="source-loading"><i data-lucide="radio"></i><span>Menyelaraskan katalog musik…</span></div>';icons();
+  remoteSearchTimer=setTimeout(async()=>{
+    try{
+      if(!window.MusicverseSources)throw new Error('Modul sumber musik tidak termuat.');
+      const result=await window.MusicverseSources.search(q,S.sourceFilter);
+      if(sequence!==S.searchSequence)return;
+      S.remoteResults=result.items||[];S.remoteTracks.clear();
+      S.remoteResults.forEach(track=>S.remoteTracks.set(track.id,track));
+      const reachable=(result.providers||[]).filter(provider=>!provider.error);
+      const failed=(result.providers||[]).filter(provider=>provider.error);
+      const summary=reachable.map(provider=>provider.label+' ('+provider.count+')').join(' · ');
+      $('#externalSearchStatus').textContent=summary?summary+(failed.length?' · tidak terhubung: '+failed.map(x=>x.label).join(', '):''):(failed.length?'Sumber belum merespons: '+failed.map(x=>x.label).join(', '):'Tidak ada hasil pada sumber eksternal.');
+      renderFederatedResults();
+    }catch(error){
+      if(sequence!==S.searchSequence)return;
+      S.remoteResults=[];S.remoteTracks.clear();
+      $('#externalSearchStatus').textContent='Pencarian eksternal gagal: '+(error.message||'koneksi tidak tersedia');
+      $('#externalSearchCount').textContent='0 hasil';$('#externalSearchResults').innerHTML='';
+    }
+  },520);
+}
+
 function openPlaylist(id){
   if(!S.playlists.some(p=>p.id===id))return;
   S.activePlaylistId=id;goView('playlist');renderPlaylist();
@@ -387,6 +449,7 @@ function handleAction(button){
   else if(action==='import-audio')$('#audioFiles').click();
   else if(action==='add-to-active-playlist')addToActivePlaylist();
   else if(action==='seek-lyric')seekToLyric(Number(button.dataset.time));
+  else if(action==='play-remote'){const track=S.remoteTracks.get(id);if(track?.playbackUrl){const queue=[id,...S.remoteResults.filter(x=>x.id!==id&&x.playbackUrl).map(x=>x.id)];playTrack(id,queue)}else if(track?.externalUrl)window.open(track.externalUrl,'_blank','noopener');}
 }
 document.addEventListener('click',e=>{
   const action=e.target.closest('[data-action]');
@@ -395,6 +458,8 @@ document.addEventListener('click',e=>{
   if(nav){goView(nav.dataset.view||nav.dataset.viewLink);return}
   const row=e.target.closest('[data-track-row]');
   if(row){const id=row.dataset.trackRow;const list=row.closest('#likedTracks')?S.tracks.filter(t=>S.liked.has(t.id)).map(t=>t.id):row.closest('#recentTracks')?S.recent:row.closest('#playlistTracks')?(activePlaylist()?.trackIds||[]):S.tracks.map(t=>t.id);playTrack(id,list);return}
+  const providerFilter=e.target.closest('[data-provider-filter]');
+  if(providerFilter){S.sourceFilter=providerFilter.dataset.providerFilter;$('[data-provider-filter]').forEach(x=>x.classList.toggle('active',x===providerFilter));lastRemoteQuery='';scheduleFederatedSearch(searchQuery,true);return}
   const tab=e.target.closest('[data-library-tab]');
   if(tab){$$('[data-library-tab]').forEach(x=>x.classList.toggle('active',x===tab));$('#libraryTrackPane').hidden=tab.dataset.libraryTab!=='tracks';$('#libraryPlaylistPane').hidden=tab.dataset.libraryTab!=='playlists';return}
   const panelTab=e.target.closest('[data-panel-tab]');
