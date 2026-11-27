@@ -15,4 +15,4 @@ jobs:
       - name: Check JavaScript syntax
         run: node --check js/app.js
       - name: Verify required application files
-        run: test -s index.html && test -s css/style.css && test -s js/app.js && test -s manifest.webmanifest
+        run: test -s index.html && test -s css/style.css && test -s js/app.js && test -s manifest.webmanifest && test -s sw.js
