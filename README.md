@@ -52,6 +52,8 @@ musicverse-pro/
 ├── assets/favicon.svg
 ├── css/style.css
 ├── js/app.js
+├── sw.js
+├── scripts/check-app.mjs
 ├── index.html
 ├── manifest.webmanifest
 └── README.md
