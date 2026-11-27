@@ -512,6 +512,14 @@ $('#saveYoutubeKey').addEventListener('click',()=>{
   lastRemoteQuery='';scheduleFederatedSearch(searchQuery,true);
   notify(key?'Pencarian YouTube dikonfigurasi.':'Konfigurasi YouTube dihapus.');
 });
+$('#saveJamendoKey').addEventListener('click',()=>{
+  const clientId=$('#jamendoClientId').value.trim();
+  const stored=window.MusicverseSources?.setJamendoClientId(clientId);
+  if(clientId&&!stored){notify('Client ID tidak dapat disimpan pada browser ini.');return}
+  $('#jamendoKeyStatus').textContent=clientId?'Client ID tersimpan di browser ini. Jamendo akan masuk ke pencarian terpadu.':'Client ID dihapus. Jamendo menjadi sumber opsional.';
+  lastRemoteQuery='';scheduleFederatedSearch(searchQuery,true);
+  notify(clientId?'Jamendo berhasil dikonfigurasi.':'Konfigurasi Jamendo dihapus.');
+});
 $('#spotifyExternalSearch').addEventListener('click',()=>{
   if(!searchQuery.trim()){notify('Masukkan kata kunci terlebih dahulu.');return}
   window.open('https://open.spotify.com/search/'+encodeURIComponent(searchQuery.trim()),'_blank','noopener');
@@ -550,6 +558,8 @@ window.addEventListener('resize',()=>{if(window.innerWidth>1120)$('#rightPanel')
   await restoreLibrary();
   const savedYoutubeKey=window.MusicverseSources?.getYoutubeApiKey?.();
   if(savedYoutubeKey)$('#youtubeKeyStatus').textContent='Key tersimpan di browser ini. YouTube akan masuk ke pencarian eksternal.';
+  const savedJamendoClientId=window.MusicverseSources?.getJamendoClientId?.();
+  if(savedJamendoClientId)$('#jamendoKeyStatus').textContent='Client ID tersimpan di browser ini. Jamendo masuk ke pencarian terpadu.';
   if(S.tracks.length===0&&readSavedState().tracks?.length)notify('File audio sebelumnya tidak ditemukan di penyimpanan browser.');
   $('#libraryGreeting').textContent=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase();
   setLyricMode('lrc',false);renderAll();icons();
