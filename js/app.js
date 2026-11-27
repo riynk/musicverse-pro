@@ -459,7 +459,7 @@ document.addEventListener('click',e=>{
   const row=e.target.closest('[data-track-row]');
   if(row){const id=row.dataset.trackRow;const list=row.closest('#likedTracks')?S.tracks.filter(t=>S.liked.has(t.id)).map(t=>t.id):row.closest('#recentTracks')?S.recent:row.closest('#playlistTracks')?(activePlaylist()?.trackIds||[]):S.tracks.map(t=>t.id);playTrack(id,list);return}
   const providerFilter=e.target.closest('[data-provider-filter]');
-  if(providerFilter){S.sourceFilter=providerFilter.dataset.providerFilter;$('[data-provider-filter]').forEach(x=>x.classList.toggle('active',x===providerFilter));lastRemoteQuery='';scheduleFederatedSearch(searchQuery,true);return}
+  if(providerFilter){S.sourceFilter=providerFilter.dataset.providerFilter;$$('[data-provider-filter]').forEach(x=>x.classList.toggle('active',x===providerFilter));lastRemoteQuery='';scheduleFederatedSearch(searchQuery,true);return}
   const tab=e.target.closest('[data-library-tab]');
   if(tab){$$('[data-library-tab]').forEach(x=>x.classList.toggle('active',x===tab));$('#libraryTrackPane').hidden=tab.dataset.libraryTab!=='tracks';$('#libraryPlaylistPane').hidden=tab.dataset.libraryTab!=='playlists';return}
   const panelTab=e.target.closest('[data-panel-tab]');
