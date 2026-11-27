@@ -210,7 +210,7 @@ function renderCurrent(){
   $('#shuffleBtn').classList.toggle('active',S.shuffle);
   $('#repeatBtn').classList.toggle('active',S.repeatMode!=='off');
   $('#repeatBtn').innerHTML='<i data-lucide="'+(S.repeatMode==='one'?'repeat-1':'repeat')+'"></i>';
-  icons();renderLyrics();
+  icons();renderLyrics();if(S.view==='lyrics')renderStudio();
 }
 function toggleLike(id){
   if(S.liked.has(id))S.liked.delete(id);else S.liked.add(id);
