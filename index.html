@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script defer src="https://unpkg.com/lucide@latest"></script>
+  <script defer src="js/providers.js"></script>
   <script defer src="js/app.js"></script>
 </head>
 <body>
@@ -102,10 +103,20 @@
       </section>
 
       <section class="view" id="searchView">
-        <div class="page-heading"><span class="section-kicker">FIND YOUR FREQUENCY</span><h1>Cari tanpa <em>batas.</em></h1><p>Pencarian bekerja pada file musik dan playlist yang tersimpan di perangkat ini.</p></div>
+        <div class="page-heading"><span class="section-kicker">FEDERATED MUSIC SEARCH</span><h1>Temukan <em>semesta musik.</em></h1><p>Satu pencarian untuk koleksi lokal, Audius, Apple Music, siaran radio, dan arsip audio terbuka.</p></div>
         <label class="search-large"><i data-lucide="search"></i><input id="pageSearch" type="search" placeholder="Apa yang ingin kamu dengar?" autocomplete="off"><kbd>ESC</kbd></label>
-        <div class="search-summary"><div><span class="section-kicker">SEARCH RESULTS</span><h2 id="searchTitle">Koleksi lokal</h2></div><span id="searchCount">0 hasil</span></div>
+        <div class="source-filter-bar" role="group" aria-label="Filter sumber musik">
+          <button class="source-filter active" data-provider-filter="all">Semua sumber</button>
+          <button class="source-filter" data-provider-filter="audius">Audius</button>
+          <button class="source-filter" data-provider-filter="apple">Apple Music</button>
+          <button class="source-filter" data-provider-filter="radio">Radio</button>
+          <button class="source-filter" data-provider-filter="archive">Internet Archive</button>
+        </div>
+        <div class="search-summary"><div><span class="section-kicker">YOUR LOCAL LIBRARY</span><h2 id="searchTitle">Koleksi lokal</h2></div><span id="searchCount">0 hasil</span></div>
         <div class="track-table" id="searchResults"></div>
+        <div class="federated-summary"><div><span class="section-kicker">CONNECTED CATALOGUES</span><strong id="externalSearchStatus">Cari judul, artis, atau suasana untuk menjangkau sumber eksternal.</strong></div><span id="externalSearchCount">—</span></div>
+        <div class="federated-results" id="externalSearchResults" aria-live="polite"></div>
+        <p class="source-disclaimer">Ketersediaan dan hak pemutaran mengikuti masing-masing penyedia. Cuplikan Apple ditampilkan untuk promosi katalog dan selalu disertai tautan menuju Apple Music. Arsip eksternal dibuka di situs sumbernya.</p>
       </section>
 
       <section class="view" id="likedView">
