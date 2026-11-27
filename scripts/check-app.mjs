@@ -9,29 +9,29 @@ const sw = readFileSync('sw.js', 'utf8');
 new Function(js);
 new Function(sw);
 
-const htmlIds = [...html.matchAll(/\\sid="([^"]+)"/g)].map(match => match[1]);
+const htmlIds = [...html.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
 const uniqueIds = new Set(htmlIds);
 assert.equal(uniqueIds.size, htmlIds.length, 'HTML contains duplicate IDs');
 
-const selectorIds = [...js.matchAll(/(?<!\\$)\\$\\('#([A-Za-z0-9_-]+)'\\)/g)]
+const selectorIds = [...js.matchAll(/(?<!\$)\$\('#([A-Za-z0-9_-]+)'\)/g)]
   .map(match => match[1])
   .filter(id => id !== 'modalText'); // injected into the modal at runtime
 const missingIds = [...new Set(selectorIds.filter(id => !uniqueIds.has(id)))];
 assert.deepEqual(missingIds, [], 'Application references IDs missing from index.html');
 
-assert.doesNotMatch(js, /(?<!\\$)\\$\\([^)]*\\)\\.(?:forEach|map|filter|find|some|every)/,
+assert.doesNotMatch(js, /(?<!\$)\$\([^)]*\)\.(?:forEach|map|filter|find|some|every)/,
   'A singular DOM query is being used as an array');
-assert.match(js, /translations:S\\.translations/);
-assert.match(js, /S\\.translations=saved\\.translations/);
-assert.match(js, /serviceWorker\\.register\\('sw\\.js'\\)/);
-assert.match(sw, /addEventListener\\('fetch'/);
+assert.match(js, /translations:S\.translations/);
+assert.match(js, /S\.translations=saved\.translations/);
+assert.match(js, /serviceWorker\.register\('sw\.js'\)/);
+assert.match(sw, /addEventListener\('fetch'/);
 assert.match(html, /id="lrcFile"/);
 
 const start = js.indexOf('function parseLyrics(raw){');
-const end = js.indexOf('\\nfunction activeLyricIndex', start);
+const end = js.indexOf('\nfunction activeLyricIndex', start);
 assert.ok(start >= 0 && end > start, 'LRC parser function is present');
 const parseLyrics = new Function(js.slice(start, end) + '; return parseLyrics;')();
-assert.deepEqual(parseLyrics('[00:12.40]First line\\n[00:16.20]Second line'), [
+assert.deepEqual(parseLyrics('[00:12.40]First line\n[00:16.20]Second line'), [
   { time: 12.4, text: 'First line' },
   { time: 16.2, text: 'Second line' }
 ]);
