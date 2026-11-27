@@ -465,7 +465,8 @@ document.addEventListener('keydown',e=>{
 });
 window.addEventListener('resize',()=>{if(window.innerWidth>1120)$('#rightPanel').classList.remove('mobile-open')});
 (async()=>{
-  try{await openDB()}catch(e){notify('Browser tidak mendukung penyimpanan audio permanen.')}
+  try{await openDB();if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{})}catch(e){notify('Browser tidak mendukung penyimpanan audio permanen.')}
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
   await restoreLibrary();
   if(S.tracks.length===0&&readSavedState().tracks?.length)notify('File audio sebelumnya tidak ditemukan di penyimpanan browser.');
   $('#libraryGreeting').textContent=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase();
