@@ -30,6 +30,19 @@ Lyrics Studio accepts plain text and LRC timestamp lines such as:
 
 Timed lines are synchronized to the local audio playback clock. This is a user-supplied lyrics editor, not an external licensed lyrics catalogue.
 
+### Federated catalogue connectors
+
+The search workspace queries four independent providers and normalizes their results into a common track/station record while retaining the original provider identity:
+
+- **Audius** — track discovery and streaming through its documented REST endpoints. Stream-gated records are sent to Audius rather than played as unrestricted audio.
+- **Apple Music / iTunes Search** — catalog metadata and promotional song previews. A preview is accompanied by a link back to the corresponding Apple store listing, as required by Apple's Search API terms.
+- **Radio Browser** — live radio station discovery and playback when a checked HTTPS stream URL is available. Stations with insecure or unverified stream URLs are shown as external links instead.
+- **Internet Archive** — searchable audio-item metadata and item pages. Results open the original archive record; the app does not assume that every recording is reusable or streamable.
+
+Search results show a source badge and a playback action only when the adapter has a usable playback URL. Source outages are isolated, so one unavailable catalogue does not block other results. The local library remains separate from remote catalogue results; remote tracks are not silently imported or written to IndexedDB.
+
+Spotify and YouTube are deliberately not presented as active catalogue connectors yet. Spotify requires a user-authorized OAuth flow and its current developer-mode access restrictions; YouTube catalogue search requires a project API key and its own quota. No credentials are embedded in this public static repository, and YouTube audio is not extracted from videos. MusicBrainz can be added as a metadata enrichment source behind a rate-limited cache; its public service permits only one request per second per application.
+
 ### Product boundaries
 
 MUSICVERSE PRO is an original interface informed by interaction patterns from music discovery, streaming-library, and synchronized-lyrics products. It does not reproduce their proprietary interfaces or branding.
