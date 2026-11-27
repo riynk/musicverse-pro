@@ -503,7 +503,19 @@ $('#modalContent').addEventListener('keydown',e=>{if(e.key==='Enter'&&S.modalMod
 $('#mobileMenu').addEventListener('click',()=>$('#sidebar').classList.toggle('open'));
 $('#backBtn').addEventListener('click',()=>historyMove(-1));$('#forwardBtn').addEventListener('click',()=>historyMove(1));
 $('#themeBtn').addEventListener('click',()=>{S.theme=S.theme==='dark'?'light':'dark';document.body.classList.toggle('light',S.theme==='light');saveState();notify(S.theme==='light'?'Tema terang aktif.':'Tema gelap aktif.')});
-$('#profileBtn').addEventListener('click',()=>notify('MUSICVERSE PRO berjalan dalam mode lokal tanpa akun.'));
+$('#profileBtn').addEventListener('click',()=>notify('MUSICVERSE PRO menghubungkan koleksi lokal dan katalog eksternal.'));
+$('#saveYoutubeKey').addEventListener('click',()=>{
+  const key=$('#youtubeApiKey').value.trim();
+  const stored=window.MusicverseSources?.setYoutubeApiKey(key);
+  if(key&&!stored){notify('Key tidak dapat disimpan pada browser ini.');return}
+  $('#youtubeKeyStatus').textContent=key?'Key tersimpan di browser ini. Batasi key melalui referrer dan API restriction.':'Key dihapus. YouTube menjadi sumber opsional.';
+  lastRemoteQuery='';scheduleFederatedSearch(searchQuery,true);
+  notify(key?'Pencarian YouTube dikonfigurasi.':'Konfigurasi YouTube dihapus.');
+});
+$('#spotifyExternalSearch').addEventListener('click',()=>{
+  if(!searchQuery.trim()){notify('Masukkan kata kunci terlebih dahulu.');return}
+  window.open('https://open.spotify.com/search/'+encodeURIComponent(searchQuery.trim()),'_blank','noopener');
+});
 $('#lyricsToggle').addEventListener('click',()=>showPanel('lyrics'));$('#queueBtn').addEventListener('click',()=>showPanel('queue'));$('#closePanel').addEventListener('click',hidePanel);
 $('#openLyricsStudio').addEventListener('click',()=>{goView('lyrics');hidePanel()});
 $('#clearQueue').addEventListener('click',()=>{S.queue=S.currentId?[S.currentId]:[];saveState();renderQueue();notify('Antrean berikutnya dibersihkan.')});
