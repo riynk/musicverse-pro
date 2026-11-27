@@ -311,12 +311,14 @@ function renderFederatedResults(){
   if(!rows.length){container.innerHTML=emptyState('Belum ada hasil eksternal','Coba kata kunci lain. Sebagian sumber mungkin sedang tidak merespons.','','');return}
   container.innerHTML=rows.map(track=>{
     const artwork=safeExternalURL(track.artwork),link=safeExternalURL(track.externalUrl);
+    const license=safeExternalURL(track.licenseUrl);
+    const licenseLink=license?'<a class="source-license-link" href="'+escapeHTML(license)+'" target="_blank" rel="noopener noreferrer">Lisensi '+escapeHTML(track.licenseType||'musik')+' <i data-lucide="scale"></i></a>':'';
     const canPlay=!!safeExternalURL(track.playbackUrl);
     const badge=track.sourceLabel||'Sumber eksternal';
     const playLabel=track.playbackType==='preview'?'Cuplikan 30 dtk':track.playbackType==='stream'?'Putar':'Buka sumber';
     const cover=artwork?'<img src="'+escapeHTML(artwork)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':'<i data-lucide="disc-3"></i>';
     const sourceLink=link?'<a class="source-open-link" href="'+escapeHTML(link)+'" target="_blank" rel="noopener noreferrer">'+escapeHTML(track.storeLabel||'Lihat sumber')+' <i data-lucide="external-link"></i></a>':'';
-    return '<article class="federated-card"><div class="federated-cover">'+cover+'</div><div class="federated-copy"><span class="source-badge source-'+escapeHTML(track.source)+'">'+escapeHTML(badge)+'</span><strong>'+escapeHTML(track.title)+'</strong><span>'+escapeHTML(track.artist)+'</span><small>'+escapeHTML(track.album||track.playbackLabel||'')+'</small><div class="federated-actions">'+(canPlay?'<button class="source-play" data-action="play-remote" data-id="'+escapeHTML(track.id)+'"><i data-lucide="play"></i>'+playLabel+'</button>':'')+sourceLink+'</div></div></article>';
+    return '<article class="federated-card"><div class="federated-cover">'+cover+'</div><div class="federated-copy"><span class="source-badge source-'+escapeHTML(track.source)+'">'+escapeHTML(badge)+'</span><strong>'+escapeHTML(track.title)+'</strong><span>'+escapeHTML(track.artist)+'</span><small>'+escapeHTML(track.album||track.playbackLabel||'')+'</small><div class="federated-actions">'+(canPlay?'<button class="source-play" data-action="play-remote" data-id="'+escapeHTML(track.id)+'"><i data-lucide="play"></i>'+playLabel+'</button>':'')+sourceLink+licenseLink+'</div></div></article>';
   }).join('');
   icons();
 }
