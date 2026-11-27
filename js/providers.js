@@ -33,6 +33,7 @@ const safeURL=value=>{
   try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}
 };
 const artworkOf=value=>safeURL(value||'');
+const safeStreamURL=value=>{const url=safeURL(value);return url.startsWith('https://')?url:''};
 const normalizeAudius=track=>{
   const user=track.user||{};
   const gated=!!track.is_stream_gated||!!(track.stream_conditions&&Object.keys(track.stream_conditions).length);
@@ -92,9 +93,9 @@ async function searchRadio(query){
     title:station.name,artist:[station.country,station.tags].filter(Boolean).join(' · ')||'Radio station',
     album:station.codec||'Live radio',duration:0,artwork:artworkOf(station.favicon),
     externalUrl:safeURL(station.homepage)||('https://www.radio-browser.info/'),
-    playbackUrl:Number(station.lastcheckok)===1?safeURL(station.url_resolved||station.url):'',
-    playbackType:Number(station.lastcheckok)===1?'stream':'external',
-    playbackLabel:Number(station.lastcheckok)===1?'Dengarkan siaran':'Buka situs radio',
+    playbackUrl:Number(station.lastcheckok)===1?safeStreamURL(station.url_resolved||station.url):'',
+    playbackType:Number(station.lastcheckok)===1&&safeStreamURL(station.url_resolved||station.url)?'stream':'external',
+    playbackLabel:Number(station.lastcheckok)===1&&safeStreamURL(station.url_resolved||station.url)?'Dengarkan siaran':'Buka situs radio',
     bitrate:Number(station.bitrate)||0,codec:station.codec||''
   })).filter(x=>x.playbackUrl||x.externalUrl);
 }
