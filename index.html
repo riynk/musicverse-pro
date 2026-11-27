@@ -129,7 +129,8 @@
         <div class="page-heading"><span class="section-kicker">MUSIXMATCH-INSPIRED LYRICS SPACE</span><h1>Lyrics <em>Studio.</em></h1><p>Tempel lirik bertanda waktu (.LRC) untuk sinkronisasi karaoke, atau simpan sebagai teks biasa.</p></div>
         <div class="lyrics-studio">
           <div class="lyrics-studio-main"><div class="studio-track"><div class="studio-cover"><i data-lucide="disc-3"></i></div><div><span class="section-kicker">TRACK IN FOCUS</span><strong id="studioTrackTitle">Belum ada lagu dipilih</strong><small id="studioTrackArtist">Pilih lagu dari perpustakaan</small></div></div>
-            <div class="studio-toolbar"><span>LYRICS SOURCE</span><div class="studio-mode"><button class="active" data-lyric-mode="lrc">Timed .LRC</button><button data-lyric-mode="plain">Plain text</button></div></div>
+            <div class="studio-toolbar"><span>LYRICS SOURCE</span><div class="studio-mode"><button class="active" data-lyric-mode="lrc">Timed .LRC</button><button data-lyric-mode="plain">Plain text</button><button data-lyric-mode="translation">Translation</button></div></div>
+            <button class="import-lrc-button" id="importLrcButton"><i data-lucide="file-up"></i> Impor file .LRC</button><input id="lrcFile" type="file" accept=".lrc,text/plain" hidden>
             <textarea id="studioLyrics" spellcheck="false" placeholder="[00:12.40] Baris lirik pertama&#10;[00:16.20] Baris lirik berikutnya&#10;&#10;Format waktu .LRC akan disinkronkan dengan audio."></textarea>
             <div class="studio-actions"><span id="lyricHint">Format: [mm:ss.xx] lirik</span><button class="button-primary" id="saveStudioLyrics"><i data-lucide="save"></i> Simpan lirik</button></div>
           </div>
