@@ -78,3 +78,10 @@ body.light .source-open-link{color:#63517f}
 .provider-setup-content>small{display:block;margin-top:8px;color:#777e92;font-size:8px}
 body.light .provider-setup{background:#fff}
 body.light .provider-key-row input{background:#f7f5fa;color:#282437}
+
+.jamendo-key-row{margin-top:13px}
+.provider-key-note{margin:13px 0 8px!important}
+.source-license-link{display:inline-flex;align-items:center;gap:4px;color:#93b3a1;font-size:8px;text-decoration:none}
+.source-license-link:hover{color:#c8e8d4}
+.source-license-link svg{width:11px;height:11px}
+body.light .source-license-link{color:#47775b}
