@@ -327,7 +327,7 @@ function scheduleFederatedSearch(query,force=false){
   const q=String(query||'').trim();
   clearTimeout(remoteSearchTimer);
   if(q.length<2){
-    S.remoteResults=[];S.remoteTracks.clear();lastRemoteQuery='';lastRemoteFilter=S.sourceFilter;
+    S.remoteResults=[];lastRemoteQuery='';lastRemoteFilter=S.sourceFilter;
     $('#externalSearchStatus').textContent='Masukkan minimal dua karakter untuk mencari di katalog eksternal.';
     $('#externalSearchCount').textContent='—';
     $('#externalSearchResults').innerHTML='';
@@ -344,7 +344,7 @@ function scheduleFederatedSearch(query,force=false){
       if(!window.MusicverseSources)throw new Error('Modul sumber musik tidak termuat.');
       const result=await window.MusicverseSources.search(q,S.sourceFilter);
       if(sequence!==S.searchSequence)return;
-      S.remoteResults=result.items||[];S.remoteTracks.clear();
+      S.remoteResults=result.items||[];
       S.remoteResults.forEach(track=>S.remoteTracks.set(track.id,track));
       const reachable=(result.providers||[]).filter(provider=>!provider.error);
       const failed=(result.providers||[]).filter(provider=>provider.error);
@@ -353,7 +353,7 @@ function scheduleFederatedSearch(query,force=false){
       renderFederatedResults();
     }catch(error){
       if(sequence!==S.searchSequence)return;
-      S.remoteResults=[];S.remoteTracks.clear();
+      S.remoteResults=[];
       $('#externalSearchStatus').textContent='Pencarian eksternal gagal: '+(error.message||'koneksi tidak tersedia');
       $('#externalSearchCount').textContent='0 hasil';$('#externalSearchResults').innerHTML='';
     }
