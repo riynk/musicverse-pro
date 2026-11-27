@@ -1,1 +1,24 @@
-{"name":"MUSICVERSE PRO","short_name":"Musicverse","description":"Ruang dengar personal untuk musik, lirik, dan suasana.","start_url":"./","display":"standalone","background_color":"#090a0f","theme_color":"#090a0f","icons":[{"src":"assets/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
+{
+  "id": "./",
+  "name": "MUSICVERSE PRO",
+  "short_name": "Musicverse",
+  "description": "Ruang dengar personal untuk musik, playlist, antrean, dan lirik tersinkron.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090b12",
+  "theme_color": "#090b12",
+  "categories": [
+    "music",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
