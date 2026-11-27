@@ -5,9 +5,11 @@ const html = readFileSync('index.html', 'utf8');
 const js = readFileSync('js/app.js', 'utf8');
 const css = readFileSync('css/style.css', 'utf8');
 const sw = readFileSync('sw.js', 'utf8');
+const providers = readFileSync('js/providers.js', 'utf8');
 
 new Function(js);
 new Function(sw);
+new Function(providers);
 
 const htmlIds = [...html.matchAll(/\sid="([^"]+)"/g)].map(match => match[1]);
 const uniqueIds = new Set(htmlIds);
@@ -26,6 +28,14 @@ assert.match(js, /S\.translations=saved\.translations/);
 assert.match(js, /serviceWorker\.register\('sw\.js'\)/);
 assert.match(sw, /addEventListener\('fetch'/);
 assert.match(html, /id="lrcFile"/);
+assert.match(html, /js\/providers\.js/);
+assert.match(html, /id="externalSearchResults"/);
+assert.match(js, /scheduleFederatedSearch/);
+assert.match(providers, /searchAudius/);
+assert.match(providers, /searchApple/);
+assert.match(providers, /searchRadio/);
+assert.match(providers, /searchArchive/);
+assert.match(providers, /playbackType:'preview'/);
 
 const start = js.indexOf('function parseLyrics(raw){');
 const end = js.indexOf('\nfunction activeLyricIndex', start);
@@ -44,4 +54,4 @@ for (const char of css) {
 }
 assert.equal(depth, 0, 'CSS braces are unbalanced');
 
-console.log('MUSICVERSE PRO checks passed: syntax, selectors, lyric timing, service worker, and CSS structure.');
+console.log('MUSICVERSE PRO checks passed: syntax, selectors, lyrics, PWA shell, and federated source adapters.');
