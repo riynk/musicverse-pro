@@ -33,12 +33,16 @@ assert.match(html, /id="externalSearchResults"/);
 assert.match(html, /id="youtubeApiKey"/);
 assert.match(html, /id="saveYoutubeKey"/);
 assert.match(html, /id="spotifyExternalSearch"/);
+assert.match(html, /id="jamendoClientId"/);
+assert.match(html, /id="saveJamendoKey"/);
 assert.match(js, /scheduleFederatedSearch/);
 assert.match(providers, /searchAudius/);
 assert.match(providers, /searchApple/);
 assert.match(providers, /searchRadio/);
 assert.match(providers, /searchArchive/);
 assert.match(providers, /searchYouTube/);
+assert.match(providers, /searchJamendo/);
+assert.match(providers, /setJamendoClientId/);
 assert.match(providers, /setYoutubeApiKey/);
 assert.match(providers, /playbackType:'preview'/);
 
