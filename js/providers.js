@@ -114,11 +114,38 @@ async function searchArchive(query){
     licenseUrl:safeURL(item.licenseurl||'')
   })).filter(x=>x.sourceId&&x.title);
 }
+
+let youtubeApiKey='';
+try{youtubeApiKey=config.youtubeApiKey||localStorage.getItem('musicverse-youtube-api-key')||''}catch{}
+function setYoutubeApiKey(value){
+  youtubeApiKey=String(value||'').trim();
+  try{if(youtubeApiKey)localStorage.setItem('musicverse-youtube-api-key',youtubeApiKey);else localStorage.removeItem('musicverse-youtube-api-key')}catch{return false}
+  return true;
+}
+async function searchYouTube(query){
+  if(!youtubeApiKey)throw new Error('API key YouTube belum dipasang pada setelan sumber.');
+  const params=new URLSearchParams({part:'snippet',q:query,type:'video',videoCategoryId:'10',maxResults:'10',safeSearch:'moderate',key:youtubeApiKey});
+  const json=await timeoutFetch('https://www.googleapis.com/youtube/v3/search?'+params.toString());
+  if(json.error)throw new Error(json.error.message||'YouTube API error');
+  return (json.items||[]).map(item=>{
+    const snippet=item.snippet||{},id=item.id?.videoId||'';
+    return {
+      id:'youtube:'+id,source:'youtube',sourceLabel:'YouTube',sourceId:id,
+      title:snippet.title||'Untitled video',artist:snippet.channelTitle||'YouTube creator',
+      album:'Video musik · YouTube',duration:0,
+      artwork:artworkOf(snippet.thumbnails?.high?.url||snippet.thumbnails?.medium?.url||snippet.thumbnails?.default?.url),
+      externalUrl:id?'https://www.youtube.com/watch?v='+encodeURIComponent(id):'',
+      playbackUrl:'',playbackType:'external',playbackLabel:'Tonton di YouTube'
+    };
+  }).filter(item=>item.sourceId);
+}
+
 const PROVIDERS={
   audius:{label:'Audius',type:'streaming',search:searchAudius},
   apple:{label:'Apple Music',type:'licensed-catalog-preview',search:searchApple},
   radio:{label:'Radio Browser',type:'live-radio',search:searchRadio},
-  archive:{label:'Internet Archive',type:'metadata-archive',search:searchArchive}
+  archive:{label:'Internet Archive',type:'metadata-archive',search:searchArchive},
+  youtube:{label:'YouTube',type:'official-video-discovery',search:searchYouTube}
 };
 async function search(query,filter='all'){
   const selected=filter==='all'?Object.keys(PROVIDERS):[filter];
@@ -132,5 +159,5 @@ async function search(query,filter='all'){
     providers:outcomes.map(x=>({key:x.key,label:PROVIDERS[x.key].label,count:x.items.length,error:x.error}))
   };
 }
-window.MusicverseSources={search,providers:PROVIDERS};
+window.MusicverseSources={search,providers:PROVIDERS,setYoutubeApiKey,getYoutubeApiKey:()=>youtubeApiKey};
 })();
