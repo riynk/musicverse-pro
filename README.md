@@ -10,10 +10,11 @@
 - **Lyrics Studio** — save plain-text lyrics or timestamped .LRC lyrics. Timestamped lines highlight with playback; selecting a line seeks to its position.
 - **Persistence** — audio blobs are stored in IndexedDB; playlist metadata, likes, queue, recent history, and lyrics are stored in browser local storage.
 - **Responsive workspace** — desktop navigation and lyrics/queue panel, compact slide-over panels, mobile player controls, and a light/dark appearance toggle.
+- **Installable shell** — web app manifest and a service worker that caches the core interface for offline reopening after the first successful load.
 
 ### Run locally
 
-Open index.html in a current browser, or serve this directory with any static web server. No build step or package installation is required. The Lucide icon set and web fonts are loaded from CDNs; the core application is vanilla HTML, CSS, and JavaScript.
+Open index.html in a current browser, or serve this directory with any static web server. No build step or package installation is required. The Lucide icon set and web fonts are loaded from CDNs; the core application is vanilla HTML, CSS, and JavaScript. Serve over HTTPS (or localhost) to enable the service worker and install flow.
 
 ### Audio and lyric formats
 
