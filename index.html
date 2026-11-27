@@ -112,11 +112,14 @@
           <button class="source-filter" data-provider-filter="radio">Radio</button>
           <button class="source-filter" data-provider-filter="archive">Internet Archive</button>
           <button class="source-filter" data-provider-filter="youtube">YouTube</button>
+          <button class="source-filter" data-provider-filter="jamendo">Jamendo</button>
           <button class="source-filter" id="spotifyExternalSearch">Spotify ↗</button>
         </div>
         <details class="provider-setup">
           <summary><i data-lucide="key-round"></i> Setel pencarian YouTube (opsional)</summary>
-          <div class="provider-setup-content"><p>Gunakan API key YouTube Data API v3 milikmu. Batasi key dengan HTTP referrer dan API restriction pada Google Cloud Console. Key disimpan hanya pada browser ini.</p><div class="provider-key-row"><input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Tempel Google API key"><button class="button-outline" id="saveYoutubeKey">Simpan</button></div><small id="youtubeKeyStatus">Belum dikonfigurasi · YouTube tidak dihitung sebagai sumber aktif.</small></div>
+          <div class="provider-setup-content"><p>Gunakan API key YouTube Data API v3 milikmu. Batasi key dengan HTTP referrer dan API restriction pada Google Cloud Console. Key disimpan hanya pada browser ini.</p><div class="provider-key-row"><input id="youtubeApiKey" type="password" autocomplete="off" placeholder="Tempel Google API key"><button class="button-outline" id="saveYoutubeKey">Simpan</button></div><small id="youtubeKeyStatus">Belum dikonfigurasi · YouTube tidak dihitung sebagai sumber aktif.</small>
+            <div class="provider-key-row jamendo-key-row"><input id="jamendoClientId" type="password" autocomplete="off" placeholder="Client ID Jamendo"><button class="button-outline" id="saveJamendoKey">Simpan</button></div><small id="jamendoKeyStatus">Belum dikonfigurasi · Jamendo tidak dihitung sebagai sumber aktif.</small>
+          </div>
         </details>
         <div class="search-summary"><div><span class="section-kicker">YOUR LOCAL LIBRARY</span><h2 id="searchTitle">Koleksi lokal</h2></div><span id="searchCount">0 hasil</span></div>
         <div class="track-table" id="searchResults"></div>
