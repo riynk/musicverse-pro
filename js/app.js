@@ -548,6 +548,8 @@ window.addEventListener('resize',()=>{if(window.innerWidth>1120)$('#rightPanel')
   try{await openDB();if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{})}catch(e){notify('Browser tidak mendukung penyimpanan audio permanen.')}
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
   await restoreLibrary();
+  const savedYoutubeKey=window.MusicverseSources?.getYoutubeApiKey?.();
+  if(savedYoutubeKey)$('#youtubeKeyStatus').textContent='Key tersimpan di browser ini. YouTube akan masuk ke pencarian eksternal.';
   if(S.tracks.length===0&&readSavedState().tracks?.length)notify('File audio sebelumnya tidak ditemukan di penyimpanan browser.');
   $('#libraryGreeting').textContent=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase();
   setLyricMode('lrc',false);renderAll();icons();
