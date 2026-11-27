@@ -1,8 +1,9 @@
-const CACHE_NAME = 'musicverse-pro-shell-v1';
+const CACHE_NAME = 'musicverse-pro-shell-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
   './css/style.css',
+  './js/providers.js',
   './js/app.js',
   './manifest.webmanifest',
   './assets/favicon.svg'
